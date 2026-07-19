@@ -3,6 +3,7 @@ import { Plus, SlidersHorizontal } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import PageHeader from '../components/PageHeader.jsx';
 import TransactionItem from '../components/TransactionItem.jsx';
+import ModalSelect from '../components/ModalSelect.jsx';
 import { categories } from '../data/seed.js';
 import { useFinance } from '../contexts/FinanceContext.jsx';
 
@@ -10,6 +11,12 @@ export default function Transactions() {
   const { transactions, t } = useFinance();
   const [filters, setFilters] = useState({ type: 'all', category: 'all', period: 'all' });
   const allCategories = [...categories.income, ...categories.expense];
+  const periodOptions = [
+    { value: 'all', label: 'Todos os periodos' },
+    { value: '2026-07', label: 'Julho 2026' },
+    { value: '2026-06', label: 'Junho 2026' },
+    { value: '2026-05', label: 'Maio 2026' }
+  ];
 
   const filtered = useMemo(() => {
     return transactions.filter((transaction) => {
@@ -30,17 +37,32 @@ export default function Transactions() {
 
       <section className="card mb-4">
         <div className="mb-3 flex items-center gap-2 text-sm font-bold"><SlidersHorizontal className="h-4 w-4" /> Filtros</div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <select className="input" value={filters.type} onChange={(event) => setFilters({ ...filters, type: event.target.value })}>
-            <option value="all">Todos</option>
-            <option value="income">Receitas</option>
-            <option value="expense">Despesas</option>
-          </select>
-          <select className="input" value={filters.category} onChange={(event) => setFilters({ ...filters, category: event.target.value })}>
-            <option value="all">Todas categorias</option>
-            {allCategories.map((category) => <option key={category}>{category}</option>)}
-          </select>
-          <input className="input" type="month" value={filters.period === 'all' ? '' : filters.period} onChange={(event) => setFilters({ ...filters, period: event.target.value || 'all' })} />
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+          <ModalSelect
+            label="Tipo"
+            value={filters.type}
+            options={[
+              { value: 'all', label: 'Todos' },
+              { value: 'income', label: 'Receitas' },
+              { value: 'expense', label: 'Despesas' }
+            ]}
+            onChange={(value) => setFilters({ ...filters, type: value })}
+          />
+          <ModalSelect
+            label="Categoria"
+            value={filters.category}
+            options={[
+              { value: 'all', label: 'Todas categorias' },
+              ...allCategories.map((category) => ({ value: category, label: category }))
+            ]}
+            onChange={(value) => setFilters({ ...filters, category: value })}
+          />
+          <ModalSelect
+            label="Periodo"
+            value={filters.period}
+            options={periodOptions}
+            onChange={(value) => setFilters({ ...filters, period: value })}
+          />
         </div>
       </section>
 

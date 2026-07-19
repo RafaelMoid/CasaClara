@@ -79,12 +79,26 @@ As rotas internas ficam protegidas ate o usuario aceitar os termos e concluir a 
 
 - Dashboard com receitas, despesas, saldo, grafico de barras, grafico de pizza e ultimas transacoes.
 - Transacoes com cadastro, edicao, exclusao e filtros.
-- Orcamentos por categoria com barra de progresso.
+- Orcamentos com nome, categoria, limite e responsavel dentro da familia.
 - Metas financeiras com valor alvo, valor atual e data.
 - Contas com saldo atual.
 - Relatorios por periodo com exportacao CSV.
 - Configuracoes com perfil, moeda, idioma, tema claro/escuro, backup e restauracao.
+- Usuarios, familias, troca de usuario ativo, troca de familia ativa e convites locais.
 - Funcionamento offline com dados locais.
+
+## Modelo de Usuarios e Familias
+
+O app trabalha com um modelo local/offline:
+
+- Um `user` representa uma pessoa.
+- Uma `family` representa um grupo financeiro.
+- Uma pessoa pode participar de mais de uma familia por meio de `memberships`.
+- O membro principal da familia tem role `owner`.
+- Convites ficam em `invitations` e podem ser aceitos localmente.
+- O app guarda `activeUserId` e `activeFamilyId` para saber quem esta usando e qual familia esta ativa.
+
+Essa estrutura e local para estudo, mas ja prepara o projeto para um backend real no futuro.
 
 ## Estrutura de Pastas
 
@@ -233,6 +247,22 @@ npm run build
 ```
 
 O arquivo `public/.htaccess` sera copiado para `dist/` e ajuda servidores Apache/cPanel a redirecionarem rotas internas da SPA para `index.html`.
+
+## Pipeline e Login Online
+
+Para publicar automaticamente no cPanel usando GitHub Actions, veja:
+
+```text
+docs/DEPLOYMENT_CPANEL.md
+```
+
+Para transformar o app em um produto com login real e dados salvos de forma segura no servidor, veja:
+
+```text
+docs/AUTH_SECURITY_PLAN.md
+```
+
+Importante: login seguro nao deve ser feito apenas no frontend. A versao online precisa de backend, banco de dados e sessoes seguras.
 
 ## Roteiro de Apresentacao em Ingles
 

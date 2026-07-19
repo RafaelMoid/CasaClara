@@ -10,15 +10,17 @@ export default function StatCard({ title, value, tone = 'blue', icon: Icon }) {
   };
 
   return (
-    <article className="card flex items-center gap-3">
+    <article className="card flex min-h-[92px] items-center gap-3 active:border-brand-200 active:bg-brand-50/40 dark:active:border-brand-900 dark:active:bg-slate-800">
       {Icon ? (
-        <span className={`grid h-10 w-10 place-items-center rounded-lg ${tones[tone]}`}>
-          <Icon className="h-5 w-5" />
+        <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-lg ${tones[tone]}`}>
+          <Icon className="h-6 w-6" />
         </span>
       ) : null}
-      <div className="min-w-0">
-        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{title}</p>
-        <strong className={`block truncate text-base ${tones[tone].split(' ')[0]}`}>{formatCurrency(value, profile.currency, profile.language)}</strong>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">{title}</p>
+        <strong className={`block whitespace-normal text-[clamp(1.45rem,6vw,2rem)] font-extrabold leading-tight tracking-normal ${tones[tone].split(' ')[0]}`}>
+          {formatCurrency(value, profile.currency, profile.language)}
+        </strong>
       </div>
     </article>
   );

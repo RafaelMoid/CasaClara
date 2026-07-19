@@ -9,7 +9,7 @@ export default function TransactionItem({ transaction, editable = false }) {
   const isIncome = transaction.type === 'income';
 
   return (
-    <article className="flex items-center gap-3 rounded-lg border border-slate-100 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+    <article className="flex items-center gap-3 rounded-lg border border-slate-100 bg-white p-3 active:border-brand-200 active:bg-brand-50/50 dark:border-slate-800 dark:bg-slate-900 dark:active:border-brand-900 dark:active:bg-slate-800">
       <span className={`grid h-10 w-10 place-items-center rounded-lg ${isIncome ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950' : 'bg-red-50 text-red-600 dark:bg-red-950'}`}>
         {isIncome ? <ArrowUpCircle className="h-5 w-5" /> : <ArrowDownCircle className="h-5 w-5" />}
       </span>

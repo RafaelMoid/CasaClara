@@ -7,16 +7,17 @@ import { formatCurrency } from '../utils/formatters.js';
 import { getCategoryTotals } from '../utils/finance.js';
 
 export default function Budgets() {
-  const { budgets, transactions, profile, addBudget, t } = useFinance();
-  const [form, setForm] = useState({ category: 'Alimentacao', limit: '' });
+  const { budgets, transactions, profile, familyMembers, activeUser, addBudget, t } = useFinance();
+  const [form, setForm] = useState({ name: '', category: 'Alimentacao', assignedUserId: activeUser?.id || '', limit: '' });
   const spentByCategory = getCategoryTotals(transactions, 'expense');
 
   const spentFor = (category) => spentByCategory.find((item) => item.name === category)?.value || 0;
+  const userName = (userId) => familyMembers.find((member) => member.userId === userId)?.user.name || 'Familia';
 
   const submit = (event) => {
     event.preventDefault();
     addBudget(form);
-    setForm({ category: 'Alimentacao', limit: '' });
+    setForm({ name: '', category: 'Alimentacao', assignedUserId: activeUser?.id || '', limit: '' });
   };
 
   return (
@@ -30,7 +31,10 @@ export default function Budgets() {
             <article className="card" key={budget.id}>
               <div className="mb-3 flex items-center justify-between">
                 <div>
-                  <h2 className="text-sm font-bold">{budget.category}</h2>
+                  <h2 className="text-sm font-bold">{budget.name}</h2>
+                  <p className="text-xs text-slate-500">
+                    {budget.category} · Responsavel: {userName(budget.assignedUserId)}
+                  </p>
                   <p className="text-xs text-slate-500">{formatCurrency(spent, profile.currency, profile.language)} gastos</p>
                 </div>
                 <strong className="text-sm">{formatCurrency(budget.limit, profile.currency, profile.language)}</strong>
@@ -46,9 +50,17 @@ export default function Budgets() {
 
       <form className="card mt-4" onSubmit={submit}>
         <h2 className="mb-3 text-sm font-bold">Novo orcamento</h2>
+        <label className="label">Nome do orcamento</label>
+        <input className="input mb-3" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Ex. Mercado do mes" required />
+        <label className="label">Categoria</label>
         <select className="input mb-3" value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}>
           {categories.expense.map((category) => <option key={category}>{category}</option>)}
         </select>
+        <label className="label">Responsavel</label>
+        <select className="input mb-3" value={form.assignedUserId} onChange={(event) => setForm({ ...form, assignedUserId: event.target.value })} required>
+          {familyMembers.map((member) => <option key={member.userId} value={member.userId}>{member.user.name}</option>)}
+        </select>
+        <label className="label">Limite mensal</label>
         <input className="input mb-3" type="number" min="0" step="0.01" placeholder="Limite mensal" value={form.limit} onChange={(event) => setForm({ ...form, limit: event.target.value })} required />
         <button className="button-primary w-full"><Plus className="h-4 w-4" /> Novo Orcamento</button>
       </form>

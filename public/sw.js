@@ -1,4 +1,4 @@
-const CACHE_NAME = 'casa-clara-v1';
+const CACHE_NAME = 'casa-clara-v3';
 const APP_SHELL = ['/', '/index.html', '/manifest.json', '/icons/icon.svg'];
 
 self.addEventListener('install', (event) => {
@@ -17,6 +17,11 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+
+  if (event.request.mode === 'navigate') {
+    event.respondWith(fetch(event.request).catch(() => caches.match('/index.html')));
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then((cached) => {

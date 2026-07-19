@@ -5,14 +5,19 @@ import { languages } from '../data/i18n';
 import { useFinance } from '../contexts/FinanceContext.jsx';
 
 export default function CoupleSetup() {
-  const { profile, updateProfile, updateState } = useFinance();
-  const [form, setForm] = useState(profile);
+  const { profile, completeSetup } = useFinance();
+  const [form, setForm] = useState({
+    userName: 'Rafael',
+    userEmail: 'rafael@casaclara.local',
+    familyName: profile.coupleName || 'Minha Familia',
+    currency: profile.currency,
+    language: profile.language
+  });
   const navigate = useNavigate();
 
   const submit = (event) => {
     event.preventDefault();
-    updateProfile(form);
-    updateState({ setupComplete: true });
+    completeSetup(form);
     navigate('/');
   };
 
@@ -22,9 +27,13 @@ export default function CoupleSetup() {
         <button type="button" className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => navigate('/terms')} aria-label="Voltar">
           <ChevronLeft className="h-5 w-5" />
         </button>
-        <h1 className="mb-6 text-center text-xl font-bold">Criar Conta do Casal</h1>
-        <label className="label">Nome do casal</label>
-        <input className="input mb-4" value={form.coupleName} onChange={(event) => setForm({ ...form, coupleName: event.target.value })} placeholder="Ex. Joao e Maria" required />
+        <h1 className="mb-6 text-center text-xl font-bold">Criar Familia</h1>
+        <label className="label">Seu nome</label>
+        <input className="input mb-4" value={form.userName} onChange={(event) => setForm({ ...form, userName: event.target.value })} placeholder="Ex. Rafael" required />
+        <label className="label">Seu e-mail</label>
+        <input className="input mb-4" type="email" value={form.userEmail} onChange={(event) => setForm({ ...form, userEmail: event.target.value })} placeholder="voce@email.com" required />
+        <label className="label">Nome da familia</label>
+        <input className="input mb-4" value={form.familyName} onChange={(event) => setForm({ ...form, familyName: event.target.value })} placeholder="Ex. Familia Varela" required />
         <label className="label">Moeda</label>
         <select className="input mb-4" value={form.currency} onChange={(event) => setForm({ ...form, currency: event.target.value })}>
           <option value="BRL">Real (R$)</option>
@@ -35,7 +44,7 @@ export default function CoupleSetup() {
         <select className="input mb-6" value={form.language} onChange={(event) => setForm({ ...form, language: event.target.value })}>
           {languages.map((language) => <option key={language.code} value={language.code}>{language.name}</option>)}
         </select>
-        <button className="button-primary w-full">Criar Conta</button>
+        <button className="button-primary w-full">Criar Familia</button>
         <p className="mt-4 text-center text-xs text-slate-500">Voce podera alterar essas configuracoes depois.</p>
       </form>
     </main>
