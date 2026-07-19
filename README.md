@@ -248,6 +248,12 @@ npm run build
 
 O arquivo `public/.htaccess` sera copiado para `dist/` e ajuda servidores Apache/cPanel a redirecionarem rotas internas da SPA para `index.html`.
 
+Para publicar manualmente em `rafaelvarela.com.br/casaclara`, veja:
+
+```text
+docs/CPANEL_MANUAL_UPLOAD.md
+```
+
 ## Pipeline e Login Online
 
 Para publicar automaticamente no cPanel usando GitHub Actions, veja:
