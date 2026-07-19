@@ -123,6 +123,8 @@ public_html/casaclara/api/config/config.php
 
 A pasta `api/config/` possui `.htaccess` para bloquear acesso direto aos arquivos de configuracao.
 
+Se o HTTPS do dominio estiver com timeout, nao force redirect para HTTPS no `.htaccess` do app. Primeiro resolva o SSL/porta 443 no cPanel ou com a hospedagem. Depois disso, o redirect para HTTPS pode ser reativado.
+
 No build de producao, use:
 
 ```text
