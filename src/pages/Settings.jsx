@@ -101,11 +101,11 @@ export default function Settings() {
         {activeMembership?.role === 'owner' ? (
           <form
             className="rounded-lg border border-slate-200 p-3 dark:border-slate-800"
-            onSubmit={(event) => {
-              event.preventDefault();
-              inviteMember(inviteForm);
-              setInviteForm({ name: '', email: '' });
-            }}
+          onSubmit={async (event) => {
+            event.preventDefault();
+            await inviteMember(inviteForm);
+            setInviteForm({ name: '', email: '' });
+          }}
           >
             <h3 className="mb-3 flex items-center gap-2 text-sm font-bold"><MailPlus className="h-4 w-4 text-brand-600" /> Convidar membro</h3>
             <input className="input mb-2" placeholder="Nome" value={inviteForm.name} onChange={(event) => setInviteForm({ ...inviteForm, name: event.target.value })} required />
@@ -120,10 +120,13 @@ export default function Settings() {
           <div className="space-y-2">
             <h3 className="text-sm font-bold">Convites pendentes</h3>
             {pendingInvitations.map((invitation) => (
-              <button className="button-secondary w-full justify-between" key={invitation.id} onClick={() => acceptInvitation(invitation.id)}>
-                <span>{invitation.name}</span>
-                <span>Aceitar</span>
-              </button>
+              <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-800" key={invitation.id}>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-bold">{invitation.name}</span>
+                  <button className="text-sm font-semibold text-brand-600" onClick={() => acceptInvitation(invitation.id)}>Aceitar</button>
+                </div>
+                {invitation.token ? <p className="mt-2 break-all rounded-md bg-slate-50 p-2 text-xs text-slate-500 dark:bg-slate-800">Token: {invitation.token}</p> : null}
+              </div>
             ))}
           </div>
         ) : null}
@@ -131,9 +134,9 @@ export default function Settings() {
 
       <form
         className="card mt-4 space-y-3"
-        onSubmit={(event) => {
+        onSubmit={async (event) => {
           event.preventDefault();
-          createFamily(familyForm);
+          await createFamily(familyForm);
           setFamilyForm({ name: '', currency: activeFamily?.currency || profile.currency, language: activeFamily?.language || profile.language });
         }}
       >

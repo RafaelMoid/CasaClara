@@ -1,8 +1,10 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import localforage from 'localforage';
 import { dictionaries } from '../data/i18n';
 import { initialState } from '../data/seed';
 import { uid } from '../utils/formatters';
+import { useAuth } from './AuthContext.jsx';
+import { api } from '../services/api.js';
 
 const STORAGE_KEY = 'casa-clara-data';
 const FinanceContext = createContext(null);
@@ -64,8 +66,11 @@ function normalizeState(saved) {
 }
 
 export function FinanceProvider({ children }) {
+  const { apiEnabled, user, families: serverFamilies } = useAuth();
   const [state, setState] = useState(initialState);
   const [loading, setLoading] = useState(true);
+  const syncingRef = useRef(false);
+  const saveTimerRef = useRef(null);
 
   useEffect(() => {
     localforage.getItem(STORAGE_KEY).then((saved) => {
@@ -80,6 +85,71 @@ export function FinanceProvider({ children }) {
       document.documentElement.classList.toggle('dark', state.profile.theme === 'dark');
     }
   }, [loading, state]);
+
+  useEffect(() => {
+    if (!apiEnabled || !user || !serverFamilies.length || loading) return;
+
+    setState((current) => {
+      const activeFamilyId = serverFamilies.some((family) => family.id === current.activeFamilyId)
+        ? current.activeFamilyId
+        : serverFamilies[0].id;
+      const hasServerIdentity = current.activeUserId === user.id && current.families.some((family) => family.id === serverFamilies[0].id);
+
+      if (hasServerIdentity) return current;
+
+      return normalizeState({
+        ...current,
+        activeUserId: user.id,
+        activeFamilyId,
+        users: [{ id: user.id, name: user.name, email: user.email }],
+        families: serverFamilies.map((family) => ({
+          id: family.id,
+          name: family.name,
+          ownerId: family.owner_id,
+          currency: current.profile.currency,
+          language: current.profile.language
+        })),
+        memberships: serverFamilies.map((family) => ({
+          id: `server-member-${family.id}-${user.id}`,
+          familyId: family.id,
+          userId: user.id,
+          role: family.role
+        })),
+        accounts: current.accounts.map((account) => ({ ...account, familyId: activeFamilyId })),
+        transactions: current.transactions.map((transaction) => ({ ...transaction, familyId: activeFamilyId, userId: user.id })),
+        budgets: current.budgets.map((budget) => ({ ...budget, familyId: activeFamilyId, assignedUserId: user.id })),
+        goals: current.goals.map((goal) => ({ ...goal, familyId: activeFamilyId }))
+      });
+    });
+  }, [apiEnabled, loading, serverFamilies, user]);
+
+  useEffect(() => {
+    if (!apiEnabled || !user || loading || !state.activeFamilyId) return;
+
+    syncingRef.current = true;
+    api
+      .syncGet(state.activeFamilyId)
+      .then((data) => {
+        if (data.snapshot) {
+          setState(normalizeState(data.snapshot));
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        syncingRef.current = false;
+      });
+  }, [apiEnabled, loading, state.activeFamilyId, user]);
+
+  useEffect(() => {
+    if (!apiEnabled || !user || loading || syncingRef.current || !state.activeFamilyId) return;
+
+    window.clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = window.setTimeout(() => {
+      api.syncPut(state.activeFamilyId, state).catch(() => {});
+    }, 900);
+
+    return () => window.clearTimeout(saveTimerRef.current);
+  }, [apiEnabled, loading, state, user]);
 
   const updateState = (patch) => setState((current) => ({ ...current, ...patch }));
   const updateProfile = (patch) =>
@@ -179,29 +249,41 @@ export function FinanceProvider({ children }) {
 
   const switchFamily = (familyId) => setState((current) => ({ ...current, activeFamilyId: familyId }));
 
-  const createFamily = ({ name, currency, language }) => {
+  const createFamily = async ({ name, currency, language }) => {
+    const serverFamily = apiEnabled ? (await api.createFamily({ name })).family : null;
     setState((current) => {
-      const familyId = uid('family');
+      const familyId = serverFamily?.id || uid('family');
       return {
         ...current,
         activeFamilyId: familyId,
-        families: [...current.families, { id: familyId, name, ownerId: current.activeUserId, currency, language }],
+        families: [...current.families, { id: familyId, name, ownerId: serverFamily?.owner_id || current.activeUserId, currency, language }],
         memberships: [...current.memberships, { id: uid('member'), familyId, userId: current.activeUserId, role: 'owner' }]
       };
     });
   };
 
-  const inviteMember = ({ name, email }) => {
+  const inviteMember = async ({ name, email }) => {
+    let invitationToken = null;
+    if (apiEnabled) {
+      const response = await api.inviteMember({ familyId: state.activeFamilyId, name, email });
+      invitationToken = response.invitationToken;
+    }
+
     setState((current) => ({
       ...current,
       invitations: [
         ...current.invitations,
-        { id: uid('invite'), familyId: current.activeFamilyId, invitedBy: current.activeUserId, name, email, status: 'pending' }
+        { id: uid('invite'), familyId: current.activeFamilyId, invitedBy: current.activeUserId, name, email, token: invitationToken, status: 'pending' }
       ]
     }));
   };
 
-  const acceptInvitation = (invitationId) => {
+  const acceptInvitation = async (invitationId) => {
+    const localInvitation = state.invitations.find((item) => item.id === invitationId);
+    if (apiEnabled && localInvitation?.token) {
+      await api.acceptInvitation({ token: localInvitation.token });
+    }
+
     setState((current) => {
       const invitation = current.invitations.find((item) => item.id === invitationId);
       if (!invitation) return current;

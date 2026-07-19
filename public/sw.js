@@ -1,5 +1,7 @@
 const CACHE_NAME = 'casa-clara-v3';
-const APP_SHELL = ['/', '/index.html', '/manifest.json', '/icons/icon.svg'];
+const BASE_PATH = new URL(self.registration.scope).pathname;
+const assetPath = (path) => `${BASE_PATH}${path}`.replaceAll('//', '/');
+const APP_SHELL = [BASE_PATH, assetPath('index.html'), assetPath('manifest.json'), assetPath('icons/icon.svg')];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
@@ -19,7 +21,7 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
   if (event.request.mode === 'navigate') {
-    event.respondWith(fetch(event.request).catch(() => caches.match('/index.html')));
+    event.respondWith(fetch(event.request).catch(() => caches.match(assetPath('index.html'))));
     return;
   }
 

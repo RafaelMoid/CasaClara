@@ -87,10 +87,7 @@ sessions
 
 ## Proximo Passo de Implementacao
 
-1. Criar pasta `api/` com PHP.
-2. Criar migracao SQL.
-3. Criar conexao PDO com MySQL.
-4. Implementar endpoints:
+Base implementada:
 
 ```text
 POST /api/auth/register
@@ -99,10 +96,10 @@ POST /api/auth/logout
 GET  /api/auth/me
 GET  /api/families
 POST /api/families
-POST /api/families/{id}/invite
-POST /api/invitations/{id}/accept
+POST /api/families/invite
+POST /api/invitations/accept
+GET  /api/sync
+PUT  /api/sync
 ```
 
-5. Alterar o React para usar API quando `VITE_API_URL` estiver configurado.
-6. Manter IndexedDB apenas como cache/offline, nao como fonte unica de verdade.
-
+O React usa a API quando `VITE_API_URL` estiver configurado. Sem essa variavel, o app continua funcionando local/offline com IndexedDB.
