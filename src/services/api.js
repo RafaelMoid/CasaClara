@@ -1,4 +1,5 @@
 const API_URL = import.meta.env.VITE_API_URL || '';
+const REQUEST_TIMEOUT_MS = 8000;
 
 let csrfToken = null;
 
@@ -7,15 +8,19 @@ export function isApiEnabled() {
 }
 
 async function request(path, options = {}) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
   const response = await fetch(`${API_URL}${path}`, {
     credentials: 'include',
+    signal: controller.signal,
     headers: {
       'Content-Type': 'application/json',
       ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
       ...(options.headers || {})
     },
     ...options
-  });
+  }).finally(() => window.clearTimeout(timeoutId));
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
