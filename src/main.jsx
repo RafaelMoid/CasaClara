@@ -6,9 +6,13 @@ import { AuthProvider } from './contexts/AuthContext.jsx';
 import { FinanceProvider } from './contexts/FinanceContext.jsx';
 import './styles.css';
 
+if ('indexedDB' in window) {
+  indexedDB.deleteDatabase('CasaClara');
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
         <FinanceProvider>
           <App />

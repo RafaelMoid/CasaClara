@@ -1,8 +1,10 @@
-export function getMonthlyTransactions(transactions, month = new Date().getMonth(), year = new Date().getFullYear()) {
-  return transactions.filter((transaction) => {
-    const date = new Date(transaction.date);
-    return date.getMonth() === month && date.getFullYear() === year;
-  });
+export function getMonthKey(date = new Date()) {
+  if (typeof date === 'string') return date.slice(0, 7);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+export function getMonthlyTransactions(transactions, monthKey = getMonthKey()) {
+  return transactions.filter((transaction) => transaction.date?.startsWith(monthKey));
 }
 
 export function getTotals(transactions) {
@@ -29,14 +31,23 @@ export function getCategoryTotals(transactions, type = 'expense') {
 }
 
 export function getBarData(transactions) {
-  const days = ['01', '08', '15', '22', '29'];
-  return days.map((day) => {
-    const dayTransactions = transactions.filter((transaction) => transaction.date.slice(8, 10) <= day);
-    const totals = getTotals(dayTransactions);
-    return {
-      name: `${day}/07`,
-      Receitas: totals.income,
-      Despesas: totals.expense
-    };
-  });
+  const grouped = transactions.reduce((acc, transaction) => {
+    const date = transaction.date;
+    if (!acc[date]) {
+      acc[date] = {
+        name: date.slice(8, 10) + '/' + date.slice(5, 7),
+        date,
+        Receitas: 0,
+        Despesas: 0
+      };
+    }
+
+    if (transaction.type === 'income') acc[date].Receitas += Number(transaction.value);
+    if (transaction.type === 'expense') acc[date].Despesas += Number(transaction.value);
+    return acc;
+  }, {});
+
+  return Object.values(grouped)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map(({ date: _date, ...item }) => item);
 }

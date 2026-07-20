@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Save } from 'lucide-react';
 import PageHeader from '../components/PageHeader.jsx';
@@ -16,13 +16,25 @@ const emptyTransaction = {
   recurring: false
 };
 
+function createEmptyTransaction(accounts) {
+  return {
+    ...emptyTransaction,
+    account: accounts[0]?.name || ''
+  };
+}
+
 export default function TransactionForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { accounts, transactions, addTransaction, updateTransaction, t } = useFinance();
   const editing = transactions.find((transaction) => transaction.id === id);
-  const [form, setForm] = useState(editing || emptyTransaction);
+  const [form, setForm] = useState(editing || createEmptyTransaction(accounts));
   const availableCategories = useMemo(() => categories[form.type], [form.type]);
+
+  useEffect(() => {
+    if (editing || form.account || !accounts[0]?.name) return;
+    setForm((current) => ({ ...current, account: accounts[0].name }));
+  }, [accounts, editing, form.account]);
 
   const setField = (field, value) => {
     const next = { ...form, [field]: value };
@@ -74,9 +86,10 @@ export default function TransactionForm() {
           <input className="input mb-4" type="date" value={form.date} onChange={(event) => setField('date', event.target.value)} required />
 
           <label className="label">Conta</label>
-          <select className="input mb-4" value={form.account} onChange={(event) => setField('account', event.target.value)}>
+          <select className="input mb-4" value={form.account} onChange={(event) => setField('account', event.target.value)} required>
             {accounts.map((account) => <option key={account.id}>{account.name}</option>)}
           </select>
+          {!accounts.length ? <p className="mb-4 rounded-lg bg-amber-50 p-3 text-sm font-semibold text-amber-700">Crie uma conta antes de cadastrar transacoes.</p> : null}
 
           <label className="label">Forma de pagamento</label>
           <select className="input mb-4" value={form.paymentMethod} onChange={(event) => setField('paymentMethod', event.target.value)}>
@@ -88,7 +101,7 @@ export default function TransactionForm() {
             <input className="h-5 w-5 accent-brand-600" type="checkbox" checked={form.recurring} onChange={(event) => setField('recurring', event.target.checked)} />
           </label>
         </section>
-        <button className="button-primary w-full"><Save className="h-4 w-4" /> {t.save}</button>
+        <button className="button-primary w-full" disabled={!accounts.length}><Save className="h-4 w-4" /> {t.save}</button>
       </form>
     </>
   );

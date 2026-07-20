@@ -1,28 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
-export default function CollapsibleSection({ title, subtitle, icon: Icon, defaultOpen = true, storageKey, children, action, className = '' }) {
-  const [open, setOpen] = useState(() => {
-    if (!storageKey) return defaultOpen;
-
-    try {
-      const saved = localStorage.getItem(storageKey);
-      return saved === null ? defaultOpen : saved === 'true';
-    } catch {
-      return defaultOpen;
-    }
-  });
+export default function CollapsibleSection({ title, subtitle, icon: Icon, defaultOpen = true, storageKey: _storageKey, children, action, className = '' }) {
+  const [open, setOpen] = useState(defaultOpen);
   const ToggleIcon = open ? ChevronUp : ChevronDown;
-
-  useEffect(() => {
-    if (!storageKey) return;
-
-    try {
-      localStorage.setItem(storageKey, String(open));
-    } catch {
-      // Keep the UI working even when browser storage is unavailable.
-    }
-  }, [open, storageKey]);
 
   return (
     <section className={`card ${className}`}>

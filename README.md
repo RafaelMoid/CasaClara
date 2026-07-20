@@ -9,7 +9,7 @@ Casa Clara e uma aplicacao web PWA, mobile first, para controle financeiro de ca
 - JavaScript ES6+ como linguagem principal.
 - Tailwind CSS para estilizar com classes utilitarias.
 - React Router DOM para navegacao entre telas.
-- localForage para salvar dados locais no IndexedDB.
+- Supabase para autenticacao, banco online e politicas de seguranca.
 - Recharts para graficos de barras e pizza.
 - lucide-react para icones.
 - PWA com `manifest.json` e `service worker`.
@@ -52,6 +52,8 @@ VITE_APP_NAME=Casa Clara
 VITE_APP_AUTHOR=Rafael Varela
 VITE_APP_DESCRIPTION=Controle Financeiro para Casais
 VITE_BASE_PATH=/
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
 ```
 
 Use `VITE_BASE_PATH=/` quando publicar na raiz do dominio.
@@ -63,6 +65,8 @@ VITE_BASE_PATH=/casa-clara/
 ```
 
 Importante: nunca coloque senhas, tokens ou chaves privadas em variaveis `VITE_`, porque elas entram no bundle final do navegador.
+
+Use apenas a `anon public key` do Supabase no frontend. Nunca use a `service_role key` no React.
 
 ## Fluxo do App
 
@@ -85,20 +89,22 @@ As rotas internas ficam protegidas ate o usuario aceitar os termos e concluir a 
 - Relatorios por periodo com exportacao CSV.
 - Configuracoes com perfil, moeda, idioma, tema claro/escuro, backup e restauracao.
 - Usuarios, familias, troca de usuario ativo, troca de familia ativa e convites locais.
-- Funcionamento offline com dados locais.
+- Dados financeiros salvos no Supabase por familia autenticada.
 
 ## Modelo de Usuarios e Familias
 
-O app trabalha com um modelo local/offline:
+O app trabalha com um modelo local/offline e sincronizacao online via Supabase:
 
 - Um `user` representa uma pessoa.
 - Uma `family` representa um grupo financeiro.
 - Uma pessoa pode participar de mais de uma familia por meio de `memberships`.
 - O membro principal da familia tem role `owner`.
-- Convites ficam em `invitations` e podem ser aceitos localmente.
+- Convites ficam em `invitations` e podem ser aceitos por usuarios autenticados.
 - O app guarda `activeUserId` e `activeFamilyId` para saber quem esta usando e qual familia esta ativa.
+- Os dados financeiros ficam no Supabase em `app_snapshots`.
+- O navegador mantem apenas estado temporario em memoria durante o uso da tela.
 
-Essa estrutura e local para estudo, mas ja prepara o projeto para um backend real no futuro.
+O Supabase usa Row Level Security para limitar os dados por familia.
 
 ## Estrutura de Pastas
 
@@ -170,7 +176,7 @@ O `FinanceContext` evita passar props por muitas camadas. Ele entrega para o app
 
 ### Effects
 
-O `useEffect` carrega dados do IndexedDB quando o app inicia e salva novamente sempre que o estado muda.
+O `useEffect` carrega o snapshot do Supabase quando o app inicia e salva novamente sempre que o estado muda.
 
 ### Memoizacao
 
@@ -183,14 +189,14 @@ O app usa `useMemo` para evitar recalcular filtros e valores derivados sem neces
 - Funcoes puras em `utils/finance.js`.
 - Datas com `Date`.
 - Formatacao com `Intl.NumberFormat` e `Intl.DateTimeFormat`.
-- Promises no carregamento do localForage.
+- Promises no carregamento e sincronizacao com Supabase.
 - Manipulacao de arquivos com `Blob`, `URL.createObjectURL` e `FileReader`.
 
 ## PWA e Offline
 
 O arquivo `public/manifest.json` permite que o app seja instalavel.
 
-O arquivo `public/sw.js` cria um cache simples da aplicacao. Os dados do usuario ficam no IndexedDB por meio do localForage, entao o app continua util mesmo offline.
+O arquivo `public/sw.js` cria um cache simples dos arquivos da aplicacao. Dados financeiros nao sao persistidos no navegador; eles sao salvos no Supabase quando o usuario esta autenticado.
 
 ## Publicar no GitHub com Seguranca
 
@@ -221,7 +227,23 @@ git commit -m "Prepare project for GitHub and deployment"
 git push
 ```
 
-## Publicar no Seu Servidor
+## Publicar Na Vercel Com Supabase
+
+Este e o caminho recomendado para colocar o Casa Clara online com seguranca, sem mexer no `public_html` do site principal:
+
+```text
+docs/VERCEL_SUPABASE_MIGRATION.md
+```
+
+Resumo:
+
+- crie o projeto no Supabase;
+- execute `supabase/schema.sql`;
+- configure `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`;
+- publique o frontend na Vercel;
+- use um subdominio como `casaclara.rafaelvarela.com.br`.
+
+## Publicar Manualmente Em Servidor Estatico
 
 Para publicar como site estatico:
 
@@ -248,7 +270,7 @@ npm run build
 
 O arquivo `public/.htaccess` sera copiado para `dist/` e ajuda servidores Apache/cPanel a redirecionarem rotas internas da SPA para `index.html`.
 
-Para publicar manualmente em `rafaelvarela.com.br/casaclara`, veja:
+Este caminho nao e mais recomendado para o Casa Clara online com login, mas continua possivel para testes estaticos. Para publicar manualmente em `rafaelvarela.com.br/casaclara`, veja:
 
 ```text
 docs/CPANEL_MANUAL_UPLOAD.md
@@ -256,13 +278,14 @@ docs/CPANEL_MANUAL_UPLOAD.md
 
 ## Pipeline e Login Online
 
-Para publicar automaticamente no cPanel usando GitHub Actions, veja:
+Os documentos de cPanel ficaram como legado do experimento anterior:
 
 ```text
 docs/DEPLOYMENT_CPANEL.md
+docs/CPANEL_MANUAL_UPLOAD.md
 ```
 
-Para transformar o app em um produto com login real e dados salvos de forma segura no servidor, veja:
+Para entender o plano de seguranca e evolucao do login:
 
 ```text
 docs/AUTH_SECURITY_PLAN.md
@@ -286,7 +309,7 @@ The first flow includes onboarding, terms of use and the couple account setup.
 After that, the user can access the dashboard.
 
 The app uses React Router for navigation, Context API for global state,
-localForage with IndexedDB for local persistence, Recharts for charts
+Supabase for online persistence, Recharts for charts
 and lucide-react for icons.
 
 All data is stored locally, so the app can work offline.
@@ -307,7 +330,7 @@ forms, routes, array methods, local storage and responsive UI.
 - Filter: filtro
 - Chart: grafico
 - Local persistence: persistencia local
-- IndexedDB: banco de dados local do navegador
+- Supabase: plataforma usada para Auth e banco online
 - Service worker: script que ajuda o app a funcionar offline
 - Responsive design: design responsivo
 - Mobile first: pensado primeiro para celular

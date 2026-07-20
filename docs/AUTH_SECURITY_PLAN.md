@@ -1,6 +1,8 @@
 # Login Seguro e Dados no Servidor
 
-O app atual e uma PWA com dados locais em IndexedDB. Isso e bom para estudo e uso offline, mas nao e suficiente para login real e dados compartilhados entre usuarios.
+Nota: este documento registra o plano anterior baseado em cPanel/PHP. A estrategia atual recomendada do projeto e Vercel + Supabase, descrita em `docs/VERCEL_SUPABASE_MIGRATION.md`.
+
+O app atual e uma PWA com dados online no Supabase. O estado financeiro fica em memoria no React durante o uso da tela e e salvo no banco remoto.
 
 Para login seguro online, o projeto precisa de um backend.
 
@@ -102,4 +104,4 @@ GET  /api/sync
 PUT  /api/sync
 ```
 
-O React usa a API quando `VITE_API_URL` estiver configurado. Sem essa variavel, o app continua funcionando local/offline com IndexedDB.
+O React usa Supabase quando `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` estiverem configurados. Dados financeiros nao sao salvos no navegador.

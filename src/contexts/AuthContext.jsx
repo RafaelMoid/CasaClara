@@ -1,25 +1,85 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { api } from '../services/api.js';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  createInitialFamily,
+  getUserFamilies,
+  sendPasswordResetEmail,
+  supabase,
+  supabaseEnabled,
+  updateSupabasePassword
+} from '../services/supabase.js';
 
 const AuthContext = createContext(null);
+
+async function ensureUserFamilies(sessionUser) {
+  if (!sessionUser) return [];
+
+  const families = await getUserFamilies(sessionUser.id);
+  if (families.length) return families;
+
+  const pendingFamilyName = sessionUser.user_metadata?.familyName;
+  const pendingName = sessionUser.user_metadata?.name || sessionUser.email?.split('@')[0] || 'Usuario principal';
+
+  if (!pendingFamilyName) return [];
+
+  await createInitialFamily({
+    user: sessionUser,
+    name: pendingName,
+    familyName: pendingFamilyName
+  });
+
+  return getUserFamilies(sessionUser.id);
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [families, setFamilies] = useState([]);
-  const [loading, setLoading] = useState(api.enabled());
-  const [apiAvailable, setApiAvailable] = useState(api.enabled());
+  const [loading, setLoading] = useState(supabaseEnabled);
+  const [apiAvailable, setApiAvailable] = useState(supabaseEnabled);
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
+  const familySetupPromiseRef = useRef(null);
+
+  const loadFamilies = async (sessionUser) => {
+    if (!sessionUser) return [];
+    if (familySetupPromiseRef.current) return familySetupPromiseRef.current;
+
+    familySetupPromiseRef.current = ensureUserFamilies(sessionUser).finally(() => {
+      familySetupPromiseRef.current = null;
+    });
+
+    return familySetupPromiseRef.current;
+  };
 
   useEffect(() => {
-    if (!api.enabled()) return;
+    if (!supabaseEnabled) return;
 
-    api
-      .me()
-      .then(async (data) => {
+    let mounted = true;
+
+    supabase.auth
+      .getSession()
+      .then(async ({ data }) => {
+        if (!mounted) return;
+        if (!data.session) {
+          setUser(null);
+          setFamilies([]);
+          setApiAvailable(true);
+          return;
+        }
+
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (userError || !userData.user) {
+          await supabase.auth.signOut();
+          setUser(null);
+          setFamilies([]);
+          setApiAvailable(true);
+          return;
+        }
+
+        const sessionUser = userData.user;
         setApiAvailable(true);
-        setUser(data.user);
-        const familyData = await api.families();
-        setFamilies(familyData.families);
+        setUser(sessionUser);
+        setFamilies(await loadFamilies(sessionUser));
       })
       .catch(() => {
         setUser(null);
@@ -27,49 +87,110 @@ export function AuthProvider({ children }) {
         setApiAvailable(false);
       })
       .finally(() => setLoading(false));
+
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setPasswordRecovery(true);
+      }
+
+      const sessionUser = session?.user || null;
+      setUser(sessionUser);
+      setFamilies(await loadFamilies(sessionUser));
+      setLoading(false);
+    });
+
+    return () => {
+      mounted = false;
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (payload) => {
     setError('');
-    const data = await api.login(payload);
+    setMessage('');
+    const { data, error: signInError } = await supabase.auth.signInWithPassword(payload);
+    if (signInError) throw signInError;
     setApiAvailable(true);
     setUser(data.user);
-    const familyData = await api.families();
-    setFamilies(familyData.families);
-    return data;
+    setFamilies(await loadFamilies(data.user));
+    return { user: data.user };
   };
 
   const register = async (payload) => {
     setError('');
-    const data = await api.register(payload);
+    setMessage('');
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email: payload.email,
+      password: payload.password,
+      options: {
+        data: {
+          name: payload.name,
+          familyName: payload.familyName
+        }
+      }
+    });
+
+    if (signUpError) throw signUpError;
+
+    if (!data.session) {
+      setMessage('Cadastro criado. Confirme seu e-mail para entrar no Casa Clara.');
+      return { needsEmailConfirmation: true };
+    }
+
+    await createInitialFamily({
+      user: data.user,
+      name: payload.name,
+      familyName: payload.familyName
+    });
+
     setApiAvailable(true);
     setUser(data.user);
-    const familyData = await api.families();
-    setFamilies(familyData.families);
-    return data;
+    setFamilies(await loadFamilies(data.user));
+    return { user: data.user };
+  };
+
+  const requestPasswordReset = async (email) => {
+    setError('');
+    setMessage('');
+    await sendPasswordResetEmail(email);
+    setMessage('Enviamos um link de redefinicao de senha para o seu e-mail.');
+  };
+
+  const updatePassword = async (password) => {
+    setError('');
+    setMessage('');
+    await updateSupabasePassword(password);
+    setPasswordRecovery(false);
+    setMessage('Senha atualizada com sucesso.');
   };
 
   const logout = async () => {
-    await api.logout();
+    await supabase.auth.signOut();
     setUser(null);
     setFamilies([]);
+    setPasswordRecovery(false);
   };
 
   const value = useMemo(
     () => ({
-      apiEnabled: api.enabled() && apiAvailable,
-      apiConfigured: api.enabled(),
+      apiEnabled: supabaseEnabled && apiAvailable,
+      apiConfigured: supabaseEnabled,
       apiAvailable,
       user,
       families,
       loading,
       error,
+      message,
+      passwordRecovery,
       setError,
+      setMessage,
       login,
       register,
+      requestPasswordReset,
+      updatePassword,
       logout
     }),
-    [apiAvailable, error, families, loading, user]
+    [apiAvailable, error, families, loading, message, passwordRecovery, user]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

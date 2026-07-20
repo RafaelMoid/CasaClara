@@ -1,20 +1,19 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import localforage from 'localforage';
 import { dictionaries } from '../data/i18n';
 import { initialState } from '../data/seed';
 import { uid } from '../utils/formatters';
 import { useAuth } from './AuthContext.jsx';
-import { api } from '../services/api.js';
+import {
+  acceptSupabaseInvitation,
+  createSupabaseFamily,
+  getSnapshot,
+  inviteSupabaseMember,
+  upsertSnapshot
+} from '../services/supabase.js';
 
-const STORAGE_KEY = 'casa-clara-data';
 const FinanceContext = createContext(null);
 const DEFAULT_FAMILY_ID = 'family-1';
 const DEFAULT_USER_ID = 'user-1';
-
-localforage.config({
-  name: 'CasaClara',
-  storeName: 'finance'
-});
 
 function normalizeState(saved) {
   const merged = { ...initialState, ...(saved || {}) };
@@ -65,23 +64,96 @@ function normalizeState(saved) {
   };
 }
 
+function createEmptyFinanceState() {
+  return {
+    ...initialState,
+    setupComplete: true,
+    termsAccepted: true,
+    users: [],
+    families: [],
+    memberships: [],
+    invitations: [],
+    accounts: [],
+    transactions: [],
+    budgets: [],
+    goals: [],
+    activeUserId: '',
+    activeFamilyId: '',
+    profile: {
+      ...initialState.profile,
+      coupleName: 'Casa Clara'
+    }
+  };
+}
+
+function createAuthenticatedState({ current, user, serverFamilies }) {
+  const activeFamilyId = serverFamilies.some((family) => family.id === current.activeFamilyId)
+    ? current.activeFamilyId
+    : serverFamilies[0]?.id || '';
+  const activeFamily = serverFamilies.find((family) => family.id === activeFamilyId) || serverFamilies[0];
+  const activeUser = {
+    id: user.id,
+    name: user.user_metadata?.name || user.email?.split('@')[0] || 'Usuario principal',
+    email: user.email
+  };
+
+  return {
+    ...createEmptyFinanceState(),
+    activeUserId: user.id,
+    activeFamilyId,
+    profile: {
+      ...current.profile,
+      coupleName: activeFamily?.name || current.profile.coupleName,
+      currency: activeFamily?.currency || current.profile.currency,
+      language: activeFamily?.language || current.profile.language
+    },
+    users: [activeUser],
+    families: serverFamilies.map((family) => ({
+      id: family.id,
+      name: family.name,
+      ownerId: family.owner_id,
+      currency: family.currency || current.profile.currency,
+      language: family.language || current.profile.language
+    })),
+    memberships: serverFamilies.map((family) => ({
+      id: `server-member-${family.id}-${user.id}`,
+      familyId: family.id,
+      userId: user.id,
+      role: family.role
+    }))
+  };
+}
+
+function transactionImpact(transaction) {
+  const value = Number(transaction.value) || 0;
+  return transaction.type === 'income' ? value : -value;
+}
+
+function applyAccountImpact(accounts, transaction, multiplier = 1) {
+  if (!transaction?.account) return accounts;
+
+  return accounts.map((account) =>
+    account.name === transaction.account
+      ? { ...account, balance: Number(account.balance) + transactionImpact(transaction) * multiplier }
+      : account
+  );
+}
+
 export function FinanceProvider({ children }) {
-  const { apiEnabled, user, families: serverFamilies } = useAuth();
+  const { apiEnabled, apiConfigured, user, families: serverFamilies } = useAuth();
   const [state, setState] = useState(initialState);
   const [loading, setLoading] = useState(true);
   const syncingRef = useRef(false);
   const saveTimerRef = useRef(null);
+  const remoteLoadedRef = useRef(false);
 
   useEffect(() => {
-    localforage.getItem(STORAGE_KEY).then((saved) => {
-      setState(normalizeState(saved));
-      setLoading(false);
-    });
-  }, []);
+    setState(apiConfigured ? createEmptyFinanceState() : normalizeState(initialState));
+    setLoading(false);
+  }, [apiConfigured]);
 
   useEffect(() => {
     if (!loading) {
-      localforage.setItem(STORAGE_KEY, state);
       document.documentElement.classList.toggle('dark', state.profile.theme === 'dark');
     }
   }, [loading, state]);
@@ -90,36 +162,11 @@ export function FinanceProvider({ children }) {
     if (!apiEnabled || !user || !serverFamilies.length || loading) return;
 
     setState((current) => {
-      const activeFamilyId = serverFamilies.some((family) => family.id === current.activeFamilyId)
-        ? current.activeFamilyId
-        : serverFamilies[0].id;
       const hasServerIdentity = current.activeUserId === user.id && current.families.some((family) => family.id === serverFamilies[0].id);
 
       if (hasServerIdentity) return current;
-
-      return normalizeState({
-        ...current,
-        activeUserId: user.id,
-        activeFamilyId,
-        users: [{ id: user.id, name: user.name, email: user.email }],
-        families: serverFamilies.map((family) => ({
-          id: family.id,
-          name: family.name,
-          ownerId: family.owner_id,
-          currency: current.profile.currency,
-          language: current.profile.language
-        })),
-        memberships: serverFamilies.map((family) => ({
-          id: `server-member-${family.id}-${user.id}`,
-          familyId: family.id,
-          userId: user.id,
-          role: family.role
-        })),
-        accounts: current.accounts.map((account) => ({ ...account, familyId: activeFamilyId })),
-        transactions: current.transactions.map((transaction) => ({ ...transaction, familyId: activeFamilyId, userId: user.id })),
-        budgets: current.budgets.map((budget) => ({ ...budget, familyId: activeFamilyId, assignedUserId: user.id })),
-        goals: current.goals.map((goal) => ({ ...goal, familyId: activeFamilyId }))
-      });
+      remoteLoadedRef.current = false;
+      return createAuthenticatedState({ current, user, serverFamilies });
     });
   }, [apiEnabled, loading, serverFamilies, user]);
 
@@ -127,25 +174,25 @@ export function FinanceProvider({ children }) {
     if (!apiEnabled || !user || loading || !state.activeFamilyId) return;
 
     syncingRef.current = true;
-    api
-      .syncGet(state.activeFamilyId)
+    getSnapshot(state.activeFamilyId)
       .then((data) => {
-        if (data.snapshot) {
-          setState(normalizeState(data.snapshot));
+        if (data?.payload) {
+          setState(normalizeState(data.payload));
         }
       })
       .catch(() => {})
       .finally(() => {
         syncingRef.current = false;
+        remoteLoadedRef.current = true;
       });
   }, [apiEnabled, loading, state.activeFamilyId, user]);
 
   useEffect(() => {
-    if (!apiEnabled || !user || loading || syncingRef.current || !state.activeFamilyId) return;
+    if (!apiEnabled || !user || loading || syncingRef.current || !remoteLoadedRef.current || !state.activeFamilyId) return;
 
     window.clearTimeout(saveTimerRef.current);
     saveTimerRef.current = window.setTimeout(() => {
-      api.syncPut(state.activeFamilyId, state).catch(() => {});
+      upsertSnapshot(state.activeFamilyId, state).catch(() => {});
     }, 900);
 
     return () => window.clearTimeout(saveTimerRef.current);
@@ -196,6 +243,7 @@ export function FinanceProvider({ children }) {
   const addTransaction = (transaction) => {
     setState((current) => ({
       ...current,
+      accounts: applyAccountImpact(current.accounts, transaction),
       transactions: [{ ...transaction, id: uid('t'), familyId: current.activeFamilyId, userId: current.activeUserId, value: Number(transaction.value) }, ...current.transactions]
     }));
   };
@@ -203,6 +251,10 @@ export function FinanceProvider({ children }) {
   const updateTransaction = (id, transaction) => {
     setState((current) => ({
       ...current,
+      accounts: applyAccountImpact(
+        applyAccountImpact(current.accounts, current.transactions.find((item) => item.id === id), -1),
+        transaction
+      ),
       transactions: current.transactions.map((item) => (item.id === id ? { ...transaction, id, value: Number(transaction.value) } : item))
     }));
   };
@@ -210,6 +262,7 @@ export function FinanceProvider({ children }) {
   const deleteTransaction = (id) => {
     setState((current) => ({
       ...current,
+      accounts: applyAccountImpact(current.accounts, current.transactions.find((transaction) => transaction.id === id), -1),
       transactions: current.transactions.filter((transaction) => transaction.id !== id)
     }));
   };
@@ -250,7 +303,7 @@ export function FinanceProvider({ children }) {
   const switchFamily = (familyId) => setState((current) => ({ ...current, activeFamilyId: familyId }));
 
   const createFamily = async ({ name, currency, language }) => {
-    const serverFamily = apiEnabled ? (await api.createFamily({ name })).family : null;
+    const serverFamily = apiEnabled ? await createSupabaseFamily({ name, currency, language }) : null;
     setState((current) => {
       const familyId = serverFamily?.id || uid('family');
       return {
@@ -265,8 +318,8 @@ export function FinanceProvider({ children }) {
   const inviteMember = async ({ name, email }) => {
     let invitationToken = null;
     if (apiEnabled) {
-      const response = await api.inviteMember({ familyId: state.activeFamilyId, name, email });
-      invitationToken = response.invitationToken;
+      const invitation = await inviteSupabaseMember({ familyId: state.activeFamilyId, invitedBy: user.id, name, email });
+      invitationToken = invitation.token;
     }
 
     setState((current) => ({
@@ -281,7 +334,7 @@ export function FinanceProvider({ children }) {
   const acceptInvitation = async (invitationId) => {
     const localInvitation = state.invitations.find((item) => item.id === invitationId);
     if (apiEnabled && localInvitation?.token) {
-      await api.acceptInvitation({ token: localInvitation.token });
+      await acceptSupabaseInvitation(localInvitation.token);
     }
 
     setState((current) => {

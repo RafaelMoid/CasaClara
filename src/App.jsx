@@ -18,11 +18,11 @@ import Auth from './pages/Auth.jsx';
 
 function GuardedRoute({ children }) {
   const { setupComplete, termsAccepted } = useFinance();
-  const { apiEnabled, user } = useAuth();
+  const { apiConfigured, user } = useAuth();
   const location = useLocation();
 
-  if (apiEnabled && !user) return <Navigate to="/auth" replace state={{ from: location }} />;
-  if (apiEnabled && user) return children;
+  if (apiConfigured && !user) return <Navigate to="/auth" replace state={{ from: location }} />;
+  if (apiConfigured && user) return children;
   if (!termsAccepted) return <Navigate to="/onboarding" replace state={{ from: location }} />;
   if (!setupComplete) return <Navigate to="/setup" replace state={{ from: location }} />;
   return children;

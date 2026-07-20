@@ -1,7 +1,8 @@
 import { Check, ChevronDown, X } from 'lucide-react';
 
 export default function ModalSelect({ label, value, options, onChange }) {
-  const selected = options.find((option) => option.value === value) || options[0];
+  const safeOptions = Array.isArray(options) ? options : [];
+  const selected = safeOptions.find((option) => option.value === value) || safeOptions[0] || { value: '', label: 'Nenhuma opcao' };
   const dialogId = `dialog-${label.toLowerCase().replaceAll(' ', '-')}`;
 
   return (
@@ -9,7 +10,8 @@ export default function ModalSelect({ label, value, options, onChange }) {
       <span className="label">{label}</span>
       <button
         type="button"
-        className="flex h-11 w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-3 text-left text-sm font-semibold text-slate-800 active:scale-[0.99] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+        className="flex h-11 w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-3 text-left text-sm font-semibold text-slate-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+        disabled={!safeOptions.length}
         onClick={() => document.getElementById(dialogId)?.showModal()}
       >
         <span className="truncate">{selected.label}</span>
@@ -30,7 +32,7 @@ export default function ModalSelect({ label, value, options, onChange }) {
         </div>
 
         <div className="max-h-[60dvh] overflow-y-auto p-2">
-          {options.map((option) => {
+          {safeOptions.map((option) => {
             const active = option.value === value;
             return (
               <button

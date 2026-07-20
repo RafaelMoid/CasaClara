@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => {
           manualChunks: {
             react: ['react', 'react-dom', 'react-router-dom'],
             charts: ['recharts'],
-            storage: ['localforage'],
+            supabase: ['@supabase/supabase-js'],
             icons: ['lucide-react']
           }
         }

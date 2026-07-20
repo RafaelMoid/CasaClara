@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react';
-import { DatabaseBackup, Globe2, Info, MailPlus, Moon, PiggyBank, RotateCcw, Upload, Users } from 'lucide-react';
+import { Cloud, DatabaseBackup, Globe2, Info, LogOut, MailPlus, Moon, RotateCcw, Upload, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import PageHeader from '../components/PageHeader.jsx';
 import { languages } from '../data/i18n.js';
 import { useFinance } from '../contexts/FinanceContext.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import { appConfig } from '../config/app.js';
 
 export default function Settings() {
@@ -24,9 +25,9 @@ export default function Settings() {
     acceptInvitation,
     restoreData,
     resetData,
-    rawState,
-    t
+    rawState
   } = useFinance();
+  const { apiConfigured, logout } = useAuth();
   const fileInput = useRef(null);
   const [familyForm, setFamilyForm] = useState({ name: '', currency: activeFamily?.currency || profile.currency, language: activeFamily?.language || profile.language });
   const [inviteForm, setInviteForm] = useState({ name: '', email: '' });
@@ -166,6 +167,7 @@ export default function Settings() {
         <button className="card flex w-full items-center gap-3 text-left text-sm font-semibold" onClick={backup}><DatabaseBackup className="h-5 w-5 text-brand-600" /> Backup de dados</button>
         <button className="card flex w-full items-center gap-3 text-left text-sm font-semibold" onClick={() => fileInput.current?.click()}><Upload className="h-5 w-5 text-brand-600" /> Restaurar dados</button>
         <input ref={fileInput} className="hidden" type="file" accept="application/json" onChange={restore} />
+        {apiConfigured ? <button className="card flex w-full items-center gap-3 text-left text-sm font-semibold text-slate-700 dark:text-slate-200" onClick={logout}><LogOut className="h-5 w-5 text-brand-600" /> Sair da conta</button> : null}
         <button className="card flex w-full items-center gap-3 text-left text-sm font-semibold text-red-600" onClick={resetData}><RotateCcw className="h-5 w-5" /> Reiniciar app</button>
       </section>
 
@@ -175,7 +177,7 @@ export default function Settings() {
         <p>Os dados inseridos no Casa Clara podem ser usados para os mais diversos fins.</p>
         <p>Este app e gratuito, mas podemos tornar alguns recursos pagos no futuro.</p>
         <p>Ao usar, voce concorda com nossos Termos de Uso e Politica de Privacidade.</p>
-        <p className="flex items-center gap-2 text-xs"><PiggyBank className="h-4 w-4" /> Dados locais com IndexedDB.</p>
+        <p className="flex items-center gap-2 text-xs"><Cloud className="h-4 w-4" /> Dados financeiros salvos no Supabase.</p>
         <p className="flex items-center gap-2 text-xs"><Globe2 className="h-4 w-4" /> Portugues, English, Espanol e Italiano.</p>
       </section>
     </>
