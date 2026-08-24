@@ -1,4 +1,4 @@
-const CACHE_NAME = 'casa-clara-v3';
+const CACHE_NAME = 'casa-clara-v4';
 const BASE_PATH = new URL(self.registration.scope).pathname;
 const assetPath = (path) => `${BASE_PATH}${path}`.replaceAll('//', '/');
 const APP_SHELL = [BASE_PATH, assetPath('index.html'), assetPath('manifest.json'), assetPath('icons/icon.svg')];

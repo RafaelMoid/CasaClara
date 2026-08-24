@@ -4,8 +4,8 @@
   "description": "App PWA mobile first para casais controlarem receitas, despesas, metas e orcamentos.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f8fafc",
-  "theme_color": "#2563eb",
+  "background_color": "#f6f7f5",
+  "theme_color": "#39715b",
   "orientation": "portrait-primary",
   "icons": [
     {

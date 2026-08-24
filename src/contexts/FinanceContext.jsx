@@ -14,6 +14,22 @@ import {
 const FinanceContext = createContext(null);
 const DEFAULT_FAMILY_ID = 'family-1';
 const DEFAULT_USER_ID = 'user-1';
+const THEME_KEY = 'app-theme';
+
+function getThemePreference() {
+  const saved = window.localStorage.getItem(THEME_KEY);
+  return ['light', 'dark', 'system'].includes(saved) ? saved : 'system';
+}
+
+function applyTheme(preference) {
+  const systemDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
+  const resolvedTheme = preference === 'system' ? (systemDark ? 'dark' : 'light') : preference;
+  document.documentElement.classList.toggle('dark', resolvedTheme === 'dark');
+  document.documentElement.dataset.theme = resolvedTheme;
+  document.documentElement.dataset.themePreference = preference;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resolvedTheme === 'dark' ? '#121513' : '#f6f7f5');
+  return resolvedTheme;
+}
 
 function normalizeState(saved) {
   const merged = { ...initialState, ...(saved || {}) };
@@ -46,6 +62,7 @@ function normalizeState(saved) {
 
   return {
     ...merged,
+    profile: { ...merged.profile, theme: getThemePreference() },
     users,
     families,
     memberships,
@@ -81,6 +98,7 @@ function createEmptyFinanceState() {
     activeFamilyId: '',
     profile: {
       ...initialState.profile,
+      theme: getThemePreference(),
       coupleName: 'Casa Clara'
     }
   };
@@ -141,7 +159,11 @@ function applyAccountImpact(accounts, transaction, multiplier = 1) {
 
 export function FinanceProvider({ children }) {
   const { apiEnabled, apiConfigured, user, families: serverFamilies } = useAuth();
-  const [state, setState] = useState(initialState);
+  const [state, setState] = useState(() => ({
+    ...initialState,
+    profile: { ...initialState.profile, theme: getThemePreference() }
+  }));
+  const [resolvedTheme, setResolvedTheme] = useState(() => applyTheme(getThemePreference()));
   const [loading, setLoading] = useState(true);
   const syncingRef = useRef(false);
   const saveTimerRef = useRef(null);
@@ -153,10 +175,16 @@ export function FinanceProvider({ children }) {
   }, [apiConfigured]);
 
   useEffect(() => {
-    if (!loading) {
-      document.documentElement.classList.toggle('dark', state.profile.theme === 'dark');
-    }
-  }, [loading, state]);
+    const preference = state.profile.theme || 'system';
+    window.localStorage.setItem(THEME_KEY, preference);
+    setResolvedTheme(applyTheme(preference));
+
+    if (preference !== 'system') return undefined;
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const syncSystemTheme = () => setResolvedTheme(applyTheme('system'));
+    media.addEventListener('change', syncSystemTheme);
+    return () => media.removeEventListener('change', syncSystemTheme);
+  }, [state.profile.theme]);
 
   useEffect(() => {
     if (!apiEnabled || !user || !serverFamilies.length || loading) return;
@@ -375,6 +403,7 @@ export function FinanceProvider({ children }) {
     return {
       ...state,
       rawState: state,
+      resolvedTheme,
       profile: {
         ...state.profile,
         coupleName: activeFamily?.name || state.profile.coupleName,
@@ -409,7 +438,7 @@ export function FinanceProvider({ children }) {
       restoreData,
       resetData
     };
-  }, [loading, state]);
+  }, [loading, resolvedTheme, state]);
 
   return <FinanceContext.Provider value={value}>{children}</FinanceContext.Provider>;
 }

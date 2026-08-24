@@ -14,7 +14,7 @@ export const initialState = {
     coupleName: 'Joao e Maria',
     currency: 'BRL',
     language: 'pt',
-    theme: 'light'
+    theme: 'system'
   },
   users: [
     { id: 'user-1', name: 'Joao', email: 'joao@casaclara.local' },

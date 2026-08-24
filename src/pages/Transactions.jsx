@@ -35,8 +35,8 @@ export default function Transactions() {
         action={<Link className="button-primary h-10 px-3" to="/transactions/new"><Plus className="h-4 w-4" /></Link>}
       />
 
-      <section className="card mb-4">
-        <div className="mb-3 flex items-center gap-2 text-sm font-bold"><SlidersHorizontal className="h-4 w-4" /> Filtros</div>
+      <section className="mb-4 rounded-2xl bg-surface-secondary p-3">
+        <div className="mb-3 flex items-center gap-2 text-sm font-bold text-content"><SlidersHorizontal className="h-4 w-4 text-brand-600" /> Filtros</div>
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
           <ModalSelect
             label="Tipo"
@@ -68,6 +68,7 @@ export default function Transactions() {
 
       <div className="space-y-2">
         {filtered.map((transaction) => <TransactionItem editable key={transaction.id} transaction={transaction} />)}
+        {!filtered.length ? <div className="rounded-2xl border border-dashed border-outline bg-surface p-8 text-center"><p className="text-sm font-semibold text-content">Nenhuma transação encontrada</p><p className="mt-1 text-xs text-muted">Ajuste os filtros ou registre uma nova movimentação.</p></div> : null}
       </div>
     </>
   );

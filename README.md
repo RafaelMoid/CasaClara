@@ -1,5 +1,7 @@
 # Casa Clara
 
+[![Casa Clara CI](https://github.com/RafaelMoid/CasaClara/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/RafaelMoid/CasaClara/actions/workflows/ci-cd.yml)
+
 Casa Clara e uma aplicacao web PWA, mobile first, para controle financeiro de casais. O projeto foi criado com foco em estudo de React, JavaScript moderno e boas praticas de organizacao de uma SPA real.
 
 ## Stack
@@ -227,21 +229,23 @@ git commit -m "Prepare project for GitHub and deployment"
 git push
 ```
 
-## Publicar Na Vercel Com Supabase
+## Deploy automático na Vercel
 
-Este e o caminho recomendado para colocar o Casa Clara online com seguranca, sem mexer no `public_html` do site principal:
+O ambiente de produção usa Vercel para o frontend e Supabase para autenticação e dados. Pull requests executam lint e build no GitHub Actions; a integração oficial da Vercel publica automaticamente cada atualização da branch `master`.
 
 ```text
-docs/VERCEL_SUPABASE_MIGRATION.md
+docs/GITHUB_VERCEL_DEPLOYMENT.md
 ```
 
 Resumo:
 
-- crie o projeto no Supabase;
-- execute `supabase/schema.sql`;
-- configure `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`;
-- publique o frontend na Vercel;
-- use um subdominio como `casaclara.rafaelvarela.com.br`.
+- GitHub Actions valida o projeto com lint e build;
+- a Vercel hospeda o frontend React/Vite;
+- o Supabase mantém login, banco PostgreSQL e RLS;
+- somente a branch `master` pode publicar em produção;
+- rotas internas da SPA funcionam por meio de `vercel.json`.
+
+O guia anterior de migração continua disponível em `docs/VERCEL_SUPABASE_MIGRATION.md` como histórico técnico.
 
 ## Publicar Manualmente Em Servidor Estatico
 

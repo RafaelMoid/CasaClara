@@ -6,8 +6,9 @@ import StatCard from '../components/StatCard.jsx';
 import { useFinance } from '../contexts/FinanceContext.jsx';
 import { downloadCsv } from '../utils/formatters.js';
 import { getCategoryTotals, getTotals } from '../utils/finance.js';
+import { chartPastels } from '../config/categoryVisuals.js';
 
-const colors = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#64748b'];
+const colors = chartPastels;
 
 export default function Reports() {
   const { transactions, t } = useFinance();
@@ -41,7 +42,7 @@ export default function Reports() {
               <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={54} outerRadius={92}>
                 {pieData.map((entry, index) => <Cell key={entry.name} fill={colors[index % colors.length]} />)}
               </Pie>
-              <Tooltip />
+              <Tooltip contentStyle={{ border: '1px solid rgb(var(--color-border))', borderRadius: 12, background: 'rgb(var(--color-surface-elevated))', color: 'rgb(var(--color-text-primary))' }} />
             </PieChart>
           </ResponsiveContainer>
         </div>

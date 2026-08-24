@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Cloud, DatabaseBackup, Globe2, Info, LogOut, MailPlus, Moon, RotateCcw, Upload, Users } from 'lucide-react';
+import { Cloud, DatabaseBackup, Globe2, Info, LogOut, MailPlus, Monitor, Moon, RotateCcw, Sun, Upload, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import PageHeader from '../components/PageHeader.jsx';
 import { languages } from '../data/i18n.js';
@@ -160,10 +160,23 @@ export default function Settings() {
           <Link className="button-secondary px-2 text-xs" to="/accounts">Contas</Link>
           <Link className="button-secondary px-2 text-xs" to="/reports">Relatorios</Link>
         </div>
-        <button className="card flex w-full items-center justify-between text-left" onClick={() => updateProfile({ theme: profile.theme === 'dark' ? 'light' : 'dark' })}>
-          <span className="flex items-center gap-3 text-sm font-semibold"><Moon className="h-5 w-5 text-brand-600" /> Tema</span>
-          <span className="text-xs text-slate-500">{profile.theme === 'dark' ? 'Escuro' : 'Claro'}</span>
-        </button>
+        <div className="card">
+          <div className="mb-3 flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-50 text-brand-700 dark:bg-brand-900/50 dark:text-brand-100"><Moon className="h-5 w-5" /></span>
+            <div><p className="text-sm font-semibold">Aparência</p><p className="supporting-text">Escolha como o Casa Clara deve aparecer.</p></div>
+          </div>
+          <div className="grid grid-cols-3 gap-2 rounded-xl bg-surface-secondary p-1" aria-label="Tema da interface">
+            {[
+              { value: 'light', label: 'Claro', icon: Sun },
+              { value: 'dark', label: 'Escuro', icon: Moon },
+              { value: 'system', label: 'Sistema', icon: Monitor }
+            ].map(({ value, label, icon: ThemeIcon }) => (
+              <button key={value} type="button" onClick={() => updateProfile({ theme: value })} aria-pressed={profile.theme === value} className={`flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-semibold transition ${profile.theme === value ? 'bg-surface text-brand-700 shadow-sm dark:text-brand-100' : 'text-muted hover:text-content'}`}>
+                <ThemeIcon className="h-4 w-4" /> {label}
+              </button>
+            ))}
+          </div>
+        </div>
         <button className="card flex w-full items-center gap-3 text-left text-sm font-semibold" onClick={backup}><DatabaseBackup className="h-5 w-5 text-brand-600" /> Backup de dados</button>
         <button className="card flex w-full items-center gap-3 text-left text-sm font-semibold" onClick={() => fileInput.current?.click()}><Upload className="h-5 w-5 text-brand-600" /> Restaurar dados</button>
         <input ref={fileInput} className="hidden" type="file" accept="application/json" onChange={restore} />

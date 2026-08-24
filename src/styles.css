@@ -3,6 +3,23 @@
 @tailwind utilities;
 
 :root {
+  --color-background: 246 247 245;
+  --color-surface: 255 255 255;
+  --color-surface-secondary: 240 243 239;
+  --color-surface-elevated: 255 255 255;
+  --color-text-primary: 32 37 32;
+  --color-text-secondary: 102 112 103;
+  --color-text-disabled: 157 165 158;
+  --color-border: 225 230 225;
+  --color-primary: 57 113 91;
+  --color-income: 40 122 82;
+  --color-expense: 184 82 82;
+  --color-warning: 154 106 34;
+  --color-info: 65 111 145;
+  --radius-control: 0.75rem;
+  --radius-card: 1rem;
+  --duration-fast: 150ms;
+  --duration-normal: 220ms;
   color-scheme: light;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -11,14 +28,36 @@
 }
 
 .dark {
+  --color-background: 18 21 19;
+  --color-surface: 25 29 26;
+  --color-surface-secondary: 32 37 33;
+  --color-surface-elevated: 37 42 38;
+  --color-text-primary: 242 244 241;
+  --color-text-secondary: 169 178 170;
+  --color-text-disabled: 112 120 113;
+  --color-border: 48 55 49;
+  --color-primary: 119 183 154;
+  --color-income: 114 201 155;
+  --color-expense: 230 148 143;
+  --color-warning: 226 182 111;
+  --color-info: 134 182 216;
   color-scheme: dark;
 }
 
 body {
   margin: 0;
-  min-width: 320px;
   min-height: 100vh;
-  background: #f8fafc;
+  background: rgb(var(--color-background));
+  color: rgb(var(--color-text-primary));
+  font-variant-numeric: tabular-nums;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 button,
@@ -28,48 +67,93 @@ textarea {
   font: inherit;
 }
 
+:focus-visible {
+  outline: 3px solid rgb(var(--color-primary) / 0.28);
+  outline-offset: 2px;
+}
+
+* {
+  scrollbar-color: rgb(var(--color-border)) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+img,
+svg,
+canvas {
+  max-width: 100%;
+}
+
+.recharts-responsive-container,
+.recharts-wrapper,
+.recharts-surface {
+  max-width: 100%;
+}
+
 @layer components {
   .screen {
-    @apply min-h-dvh bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-100;
+    @apply min-h-dvh w-full max-w-full overflow-x-hidden bg-background text-content;
   }
 
   .app-shell {
-    @apply mx-auto flex min-h-dvh w-full max-w-md flex-col bg-white shadow-soft dark:bg-slate-900 md:my-6 md:grid md:min-h-[calc(100dvh-48px)] md:max-w-7xl md:grid-cols-[260px_minmax(0,1fr)] md:overflow-hidden md:rounded-[2rem] md:border md:border-slate-200 md:dark:border-slate-800;
+    @apply mx-auto flex min-h-dvh w-full max-w-full flex-col overflow-x-hidden bg-surface shadow-soft sm:max-w-md md:my-6 md:grid md:min-h-[calc(100dvh-48px)] md:max-w-7xl md:grid-cols-[248px_minmax(0,1fr)] md:overflow-hidden md:rounded-[2rem] md:border md:border-outline;
   }
 
   .card {
-    @apply rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900;
+    @apply w-full max-w-full overflow-hidden rounded-2xl border border-outline bg-surface p-4 shadow-card transition-colors duration-normal;
   }
 
   .button-primary {
-    @apply inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 text-sm font-semibold text-white transition active:scale-[0.99] active:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white transition duration-fast hover:bg-brand-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .button-secondary {
-    @apply inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition active:scale-[0.99] active:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:active:bg-slate-800;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-outline bg-surface px-4 text-sm font-semibold text-content transition duration-fast hover:bg-surface-secondary active:scale-[0.98];
   }
 
   .input {
-    @apply h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-brand-900;
+    @apply h-11 w-full rounded-xl border border-outline bg-surface px-3 text-sm text-content outline-none transition duration-fast placeholder:text-muted focus:border-brand-500 focus:ring-4 focus:ring-brand-100/70 dark:focus:ring-brand-900/60;
   }
 
   .label {
-    @apply mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-300;
+    @apply mb-1.5 block text-xs font-semibold text-muted;
   }
 
   .nav-icon {
-    @apply flex min-h-14 min-w-[54px] flex-1 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-[11px] font-medium text-slate-500 transition active:bg-slate-100 dark:text-slate-400 dark:active:bg-slate-800;
+    @apply flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[11px] font-medium text-muted transition duration-fast hover:bg-surface-secondary active:scale-95;
   }
 
   .nav-icon-active {
-    @apply bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-100;
+    @apply bg-brand-50 text-brand-700 dark:bg-brand-900/50 dark:text-brand-100;
   }
 
   .sidebar-link {
-    @apply flex min-h-12 items-center gap-3 rounded-lg px-3 text-sm font-semibold text-slate-600 transition active:bg-slate-100 dark:text-slate-300 dark:active:bg-slate-800;
+    @apply flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-muted transition duration-fast hover:bg-surface-secondary active:scale-[0.99];
   }
 
   .sidebar-link-active {
     @apply bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-100;
+  }
+
+  .icon-button {
+    @apply grid h-11 w-11 shrink-0 place-items-center rounded-xl text-muted transition duration-fast hover:bg-surface-secondary active:scale-95;
+  }
+
+  .section-title {
+    @apply text-sm font-bold text-content;
+  }
+
+  .supporting-text {
+    @apply text-xs text-muted;
+  }
+
+  .progress-track {
+    @apply h-2 overflow-hidden rounded-full bg-surface-secondary;
   }
 }

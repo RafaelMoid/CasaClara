@@ -10,14 +10,14 @@ export default function CollapsibleSection({ title, subtitle, icon: Icon, defaul
       <div className={`flex items-start justify-between gap-3 ${open ? 'mb-3' : ''}`}>
         <button
           type="button"
-          className="flex min-h-11 min-w-0 flex-1 items-start gap-2 rounded-lg text-left active:bg-slate-50 dark:active:bg-slate-800"
+          className="flex min-h-11 min-w-0 flex-1 items-start gap-2 rounded-xl text-left transition hover:bg-surface-secondary active:scale-[0.99]"
           onClick={() => setOpen((current) => !current)}
           aria-expanded={open}
         >
-          {Icon ? <Icon className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" /> : null}
+          {Icon ? <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-100"><Icon className="h-4 w-4" /></span> : null}
           <span className="min-w-0">
-            <span className="block text-sm font-bold text-slate-950 dark:text-white">{title}</span>
-            {subtitle ? <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">{subtitle}</span> : null}
+            <span className="block text-sm font-bold text-content">{title}</span>
+            {subtitle ? <span className="mt-1 block text-xs text-muted">{subtitle}</span> : null}
           </span>
         </button>
 
@@ -25,7 +25,7 @@ export default function CollapsibleSection({ title, subtitle, icon: Icon, defaul
           {action}
           <button
             type="button"
-            className="grid h-11 w-11 place-items-center rounded-lg border border-slate-200 text-slate-500 active:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:active:bg-slate-800"
+            className="icon-button border border-outline"
             onClick={() => setOpen((current) => !current)}
             aria-label={open ? `Fechar ${title}` : `Abrir ${title}`}
             aria-expanded={open}

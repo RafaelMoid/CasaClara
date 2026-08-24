@@ -9,6 +9,20 @@ import {
 } from '../services/supabase.js';
 
 const AuthContext = createContext(null);
+const PASSWORD_RECOVERY_KEY = 'casa-clara-password-recovery';
+const PASSWORD_RECOVERY_TTL = 30 * 60 * 1000;
+
+function getPasswordRecoveryState() {
+  const recoveryStartedAt = Number(window.localStorage.getItem(PASSWORD_RECOVERY_KEY));
+  if (!recoveryStartedAt) return false;
+
+  if (Date.now() - recoveryStartedAt > PASSWORD_RECOVERY_TTL) {
+    window.localStorage.removeItem(PASSWORD_RECOVERY_KEY);
+    return false;
+  }
+
+  return true;
+}
 
 async function ensureUserFamilies(sessionUser) {
   if (!sessionUser) return [];
@@ -37,7 +51,7 @@ export function AuthProvider({ children }) {
   const [apiAvailable, setApiAvailable] = useState(supabaseEnabled);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [passwordRecovery, setPasswordRecovery] = useState(false);
+  const [passwordRecovery, setPasswordRecovery] = useState(getPasswordRecoveryState);
   const familySetupPromiseRef = useRef(null);
 
   const loadFamilies = async (sessionUser) => {
@@ -90,6 +104,7 @@ export function AuthProvider({ children }) {
 
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
+        window.localStorage.setItem(PASSWORD_RECOVERY_KEY, String(Date.now()));
         setPasswordRecovery(true);
       }
 
@@ -99,9 +114,17 @@ export function AuthProvider({ children }) {
       setLoading(false);
     });
 
+    const syncPasswordRecovery = (event) => {
+      if (event.key === PASSWORD_RECOVERY_KEY) {
+        setPasswordRecovery(getPasswordRecoveryState());
+      }
+    };
+    window.addEventListener('storage', syncPasswordRecovery);
+
     return () => {
       mounted = false;
       listener.subscription.unsubscribe();
+      window.removeEventListener('storage', syncPasswordRecovery);
     };
   }, []);
 
@@ -160,12 +183,17 @@ export function AuthProvider({ children }) {
     setError('');
     setMessage('');
     await updateSupabasePassword(password);
+    await supabase.auth.signOut();
+    window.localStorage.removeItem(PASSWORD_RECOVERY_KEY);
+    setUser(null);
+    setFamilies([]);
     setPasswordRecovery(false);
-    setMessage('Senha atualizada com sucesso.');
+    setMessage('Senha atualizada com sucesso. Entre novamente com a nova senha.');
   };
 
   const logout = async () => {
     await supabase.auth.signOut();
+    window.localStorage.removeItem(PASSWORD_RECOVERY_KEY);
     setUser(null);
     setFamilies([]);
     setPasswordRecovery(false);

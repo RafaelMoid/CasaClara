@@ -58,12 +58,12 @@ export default function TransactionForm() {
       <form className="space-y-4" onSubmit={submit}>
         <section className="card">
           <label className="label">Tipo</label>
-          <div className="mb-4 grid grid-cols-2 rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
+          <div className="mb-4 grid grid-cols-2 rounded-xl bg-surface-secondary p-1">
             {['income', 'expense'].map((type) => (
               <button
                 type="button"
                 key={type}
-                className={`h-9 rounded-md text-sm font-semibold ${form.type === type ? 'bg-white text-brand-700 shadow-sm dark:bg-slate-950' : 'text-slate-500'}`}
+                className={`h-10 rounded-lg text-sm font-semibold transition ${form.type === type ? 'bg-surface text-brand-700 shadow-sm dark:text-brand-100' : 'text-muted'}`}
                 onClick={() => setField('type', type)}
               >
                 {type === 'income' ? 'Receita' : 'Despesa'}
@@ -80,7 +80,7 @@ export default function TransactionForm() {
           <input className="input mb-4" value={form.description} onChange={(event) => setField('description', event.target.value)} placeholder="Ex. Almoco com amigos" required />
 
           <label className="label">Valor</label>
-          <input className="input mb-4" type="number" min="0" step="0.01" value={form.value} onChange={(event) => setField('value', event.target.value)} required />
+          <input className="input mb-4" inputMode="decimal" type="number" min="0" step="0.01" value={form.value} onChange={(event) => setField('value', event.target.value)} required />
 
           <label className="label">Data</label>
           <input className="input mb-4" type="date" value={form.date} onChange={(event) => setField('date', event.target.value)} required />

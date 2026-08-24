@@ -1,34 +1,37 @@
-import { ArrowDownCircle, ArrowUpCircle, Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFinance } from '../contexts/FinanceContext.jsx';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import { getCategoryVisual } from '../config/categoryVisuals.js';
 
 export default function TransactionItem({ transaction, editable = false }) {
   const { profile, deleteTransaction } = useFinance();
   const navigate = useNavigate();
   const isIncome = transaction.type === 'income';
+  const categoryVisual = getCategoryVisual(transaction.category);
+  const CategoryIcon = categoryVisual.icon;
 
   return (
-    <article className="flex items-center gap-3 rounded-lg border border-slate-100 bg-white p-3 active:border-brand-200 active:bg-brand-50/50 dark:border-slate-800 dark:bg-slate-900 dark:active:border-brand-900 dark:active:bg-slate-800">
-      <span className={`grid h-10 w-10 place-items-center rounded-lg ${isIncome ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950' : 'bg-red-50 text-red-600 dark:bg-red-950'}`}>
-        {isIncome ? <ArrowUpCircle className="h-5 w-5" /> : <ArrowDownCircle className="h-5 w-5" />}
+    <article className="group flex min-w-0 items-center gap-3 rounded-2xl border border-outline bg-surface p-3.5 shadow-card transition duration-fast hover:border-brand-100 dark:hover:border-brand-900">
+      <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${categoryVisual.className}`} aria-hidden="true">
+        <CategoryIcon className="h-5 w-5" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{transaction.description}</p>
-        <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+        <p className="truncate text-sm font-semibold text-content">{transaction.description}</p>
+        <p className="mt-0.5 truncate text-xs text-muted">
           {transaction.category} · {formatDate(transaction.date, profile.language)}
         </p>
       </div>
-      <div className="text-right">
-        <p className={`text-sm font-bold ${isIncome ? 'text-emerald-600' : 'text-red-600'}`}>
+      <div className="min-w-0 max-w-[45%] shrink-0 text-right">
+        <p className={`break-words text-sm font-bold leading-tight ${isIncome ? 'text-income' : 'text-expense'}`}>
           {isIncome ? '+' : '-'} {formatCurrency(transaction.value, profile.currency, profile.language)}
         </p>
         {editable ? (
           <div className="mt-1 flex justify-end gap-1">
-            <button className="rounded-md p-1 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => navigate(`/transactions/${transaction.id}/edit`)} aria-label="Editar">
+            <button className="rounded-lg p-1.5 text-muted hover:bg-surface-secondary" onClick={() => navigate(`/transactions/${transaction.id}/edit`)} aria-label="Editar">
               <Pencil className="h-4 w-4" />
             </button>
-            <button className="rounded-md p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-950" onClick={() => deleteTransaction(transaction.id)} aria-label="Excluir">
+            <button className="rounded-lg p-1.5 text-expense hover:bg-red-50 dark:hover:bg-red-950" onClick={() => deleteTransaction(transaction.id)} aria-label="Excluir">
               <Trash2 className="h-4 w-4" />
             </button>
           </div>

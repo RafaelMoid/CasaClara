@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
 
 export default function Auth() {
   const { user, login, register, requestPasswordReset, updatePassword, passwordRecovery, error, message, setError, setMessage } = useAuth();
   const [mode, setMode] = useState('login');
-  const [form, setForm] = useState({ name: '', email: '', password: '', familyName: '', newPassword: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', familyName: '', newPassword: '', confirmNewPassword: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
 
   if (user && !passwordRecovery) return <Navigate to="/" replace />;
 
@@ -19,6 +21,9 @@ export default function Auth() {
 
     try {
       if (passwordRecovery) {
+        if (form.newPassword !== form.confirmNewPassword) {
+          throw new Error('As senhas não são iguais. Verifique e tente novamente.');
+        }
         await updatePassword(form.newPassword);
       } else if (mode === 'login') {
         await login({ email: form.email, password: form.password });
@@ -38,21 +43,21 @@ export default function Auth() {
   };
 
   return (
-    <main className="screen grid place-items-center px-4">
-      <form className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-5 shadow-soft dark:border-slate-800 dark:bg-slate-900" onSubmit={submit}>
+    <main className="screen grid min-w-0 grid-cols-[minmax(0,1fr)] place-items-center px-4">
+      <form className="min-w-0 w-full max-w-sm rounded-3xl border border-outline bg-surface p-6 shadow-soft" onSubmit={submit}>
         <div className="mb-5 text-center">
-          <ShieldCheck className="mx-auto mb-3 h-10 w-10 text-brand-600" />
-          <h1 className="text-2xl font-black">Casa Clara</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <span className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-100"><ShieldCheck className="h-7 w-7" /></span>
+          <h1 className="text-2xl font-bold tracking-[-0.03em]">Casa Clara</h1>
+          <p className="mt-1.5 text-sm text-muted">
             {passwordRecovery ? 'Defina sua nova senha' : mode === 'login' ? 'Entre com sua conta' : mode === 'reset' ? 'Recupere sua senha' : 'Crie sua conta segura'}
           </p>
         </div>
 
-        {!passwordRecovery ? <div className="mb-4 grid grid-cols-2 rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
-          <button type="button" className={`h-10 rounded-md text-sm font-bold ${mode === 'login' ? 'bg-white text-brand-700 shadow-sm dark:bg-slate-950' : 'text-slate-500'}`} onClick={() => setMode('login')}>
+        {!passwordRecovery ? <div className="mb-5 grid grid-cols-2 rounded-xl bg-surface-secondary p-1">
+          <button type="button" className={`h-10 rounded-lg text-sm font-bold transition ${mode === 'login' ? 'bg-surface text-brand-700 shadow-sm dark:text-brand-100' : 'text-muted'}`} onClick={() => setMode('login')}>
             Login
           </button>
-          <button type="button" className={`h-10 rounded-md text-sm font-bold ${mode === 'register' ? 'bg-white text-brand-700 shadow-sm dark:bg-slate-950' : 'text-slate-500'}`} onClick={() => setMode('register')}>
+          <button type="button" className={`h-10 rounded-lg text-sm font-bold transition ${mode === 'register' ? 'bg-surface text-brand-700 shadow-sm dark:text-brand-100' : 'text-muted'}`} onClick={() => setMode('register')}>
             Cadastro
           </button>
         </div> : null}
@@ -60,7 +65,19 @@ export default function Auth() {
         {passwordRecovery ? (
           <>
             <label className="label">Nova senha</label>
-            <input className="input mb-4" type="password" minLength={8} value={form.newPassword} onChange={(event) => setForm({ ...form, newPassword: event.target.value })} required />
+            <div className="relative mb-3">
+              <input className="input pr-12" type={showNewPassword ? 'text' : 'password'} minLength={8} value={form.newPassword} onChange={(event) => setForm({ ...form, newPassword: event.target.value })} required />
+              <button type="button" className="absolute inset-y-0 right-0 grid w-12 place-items-center text-slate-500" onClick={() => setShowNewPassword((visible) => !visible)} aria-label={showNewPassword ? 'Ocultar nova senha' : 'Mostrar nova senha'}>
+                {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
+            <label className="label">Repita a nova senha</label>
+            <div className="relative mb-4">
+              <input className="input pr-12" type={showConfirmNewPassword ? 'text' : 'password'} minLength={8} value={form.confirmNewPassword} onChange={(event) => setForm({ ...form, confirmNewPassword: event.target.value })} required />
+              <button type="button" className="absolute inset-y-0 right-0 grid w-12 place-items-center text-slate-500" onClick={() => setShowConfirmNewPassword((visible) => !visible)} aria-label={showConfirmNewPassword ? 'Ocultar confirmação da senha' : 'Mostrar confirmação da senha'}>
+                {showConfirmNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
           </>
         ) : null}
 

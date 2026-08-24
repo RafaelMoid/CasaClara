@@ -1,11 +1,11 @@
 export default function PageHeader({ title, subtitle, action }) {
   return (
-    <header className="mb-4 flex items-start justify-between gap-3">
-      <div>
-        <h1 className="text-xl font-bold text-slate-950 dark:text-white">{title}</h1>
-        {subtitle ? <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{subtitle}</p> : null}
+    <header className="mb-6 flex min-w-0 items-start justify-between gap-4">
+      <div className="min-w-0 flex-1">
+        <h1 className="break-words text-2xl font-bold leading-tight tracking-[-0.02em] text-content">{title}</h1>
+        {subtitle ? <p className="mt-1.5 break-words text-sm text-muted">{subtitle}</p> : null}
       </div>
-      {action}
+      {action ? <div className="shrink-0">{action}</div> : null}
     </header>
   );
 }

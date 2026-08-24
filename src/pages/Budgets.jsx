@@ -39,8 +39,8 @@ export default function Budgets() {
                 </div>
                 <strong className="text-sm">{formatCurrency(budget.limit, profile.currency, profile.language)}</strong>
               </div>
-              <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800">
-                <div className="h-2 rounded-full bg-mint" style={{ width: `${percent}%` }} />
+              <div className="progress-track">
+                <div className="h-full rounded-full bg-mint transition-[width] duration-slow" style={{ width: `${percent}%` }} />
               </div>
               <p className="mt-2 text-right text-xs font-semibold text-slate-500">{Math.round(percent)}%</p>
             </article>
@@ -61,7 +61,7 @@ export default function Budgets() {
           {familyMembers.map((member) => <option key={member.userId} value={member.userId}>{member.user.name}</option>)}
         </select>
         <label className="label">Limite mensal</label>
-        <input className="input mb-3" type="number" min="0" step="0.01" placeholder="Limite mensal" value={form.limit} onChange={(event) => setForm({ ...form, limit: event.target.value })} required />
+        <input className="input mb-3" inputMode="decimal" type="number" min="0" step="0.01" placeholder="Limite mensal" value={form.limit} onChange={(event) => setForm({ ...form, limit: event.target.value })} required />
         <button className="button-primary w-full"><Plus className="h-4 w-4" /> Novo Orcamento</button>
       </form>
     </>
